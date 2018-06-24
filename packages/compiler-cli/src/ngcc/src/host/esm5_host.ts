@@ -7,8 +7,7 @@
  */
 
 import * as ts from 'typescript';
-import { ClassMember, Decorator, Parameter, ReflectionHost } from '../../../ngtsc/host';
-import { TypeScriptReflectionHost } from '../../../ngtsc/metadata/src/reflector';
+import { ClassMember, Decorator, Import, Parameter } from '../../../ngtsc/host';
 import { NgccReflectionHost } from './ngcc_host';
 
 /**
@@ -24,38 +23,27 @@ import { NgccReflectionHost } from './ngcc_host';
  * Items are decorated if they have a static property called `decorators`.
  *
  */
-export class Esm5ReflectionHost extends TypeScriptReflectionHost implements NgccReflectionHost {
-  constructor(checker: ts.TypeChecker) {
-    super(checker);
-  }
+export class Esm5ReflectionHost implements NgccReflectionHost {
+  constructor(protected checker: ts.TypeChecker) { }
 
   getDecoratorsOfDeclaration(declaration: ts.Declaration): Decorator[]|null {
     // This is different to ES2015 and TS
     throw new Error('Not implemented');
   }
 
-  isClass(node: ts.Node): node is ts.Declaration {
-    // Is this enough? Perhaps we should also check that the initializer is an IIFE?
-    return ts.isFunctionDeclaration(node) && startsWithUppercase(node.name);
-  }
-
-  getClassDecorators(classSymbol: ts.Symbol): Decorator[] {
-    throw new Error("Method not implemented.");
-  }
-  getMemberDecorators(classSymbol: ts.Symbol): Map<string, Decorator[]> {
-    throw new Error("Method not implemented.");
-  }
-  getConstructorParamDecorators(classSymbol: ts.Symbol): Map<string, Decorator[]> {
-    throw new Error("Method not implemented.");
-  }
   getMembersOfClass(clazz: ts.Declaration): ClassMember[] {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
-  getConstructorParameters(declaration: ts.Declaration): Parameter[] | null {
-    throw new Error("Method not implemented.");
-  }
-}
 
-function startsWithUppercase(name: ts.Identifier|undefined) {
-  return !!name && /^[A-Z]/.test(name.getText());
+  getConstructorParameters(declaration: ts.Declaration): Parameter[] | null {
+    throw new Error('Method not implemented.');
+  }
+
+  getImportOfIdentifier(id: ts.Identifier): Import|null {
+    throw new Error('Method not implemented.');
+  }
+
+  isClass(node: ts.Node): node is ts.Declaration {
+    throw new Error('Method not implemented');
+  }
 }

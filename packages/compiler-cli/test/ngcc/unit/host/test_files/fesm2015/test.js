@@ -5,27 +5,31 @@
 * Use of this source code is governed by an MIT-style license that can be
 * found in the LICENSE file at https://angular.io/license
 */
-import { Directive } from '@angular/core';
+import { Directive, InjectionToken, Input } from '@angular/core';
 
-class NgForOf {
+const INJECTED_TOKEN = new InjectionToken('injected');
+
+class SomeDirective {
+  constructor(_viewContainer, _template, injected) {}
 }
-NgForOf.decorators = [
-    { type: Directive, args: [{ selector: '[ngFor][ngForOf]' },] }
+SomeDirective.decorators = [
+    { type: Directive, args: [{ selector: '[someDirective]' },] }
 ];
-NgForOf.ctorParameters = () => [
+SomeDirective.ctorParameters = () => [
   { type: ViewContainerRef, },
   { type: TemplateRef, },
-  { type: IterableDiffers, },
+  { type: undefined, decorators: [{ type: Inject, args: [INJECTED_TOKEN,] },] },
 ];
-NgForOf.propDecorators = {
-  "ngForOf": [{ type: Input },],
-  "ngForTrackBy": [{ type: Input },],
-  "ngForTemplate": [{ type: Input },],
+
+SomeDirective.propDecorators = {
+  "input1": [{ type: Input },],
+  "input2": [{ type: Input },],
 };
 
 class SimpleClass {
 }
 
 function foo() {
-
 }
+
+export { foo, INJECTED_TOKEN, SomeDirective, SimpleClass };

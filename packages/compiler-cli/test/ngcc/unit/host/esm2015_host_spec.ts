@@ -9,6 +9,7 @@
 import * as ts from 'typescript';
 import { resolve } from 'path';
 import { Esm2015ReflectionHost } from '../../../../src/ngcc/src/host/esm2015_host';
+import { ClassMember, ClassMemberKind } from '../../../../src/ngtsc/host';
 
 describe('Esm2015ReflectionHost', () => {
   let program: ts.Program;
@@ -25,7 +26,7 @@ describe('Esm2015ReflectionHost', () => {
 
   describe('getDecoratorsOfDeclaration()', () => {
     it('should find the decorators on a class', () => {
-      const classNode = getNode('NgForOf');
+      const classNode = getNode('SomeDirective');
       const decorators = host.getDecoratorsOfDeclaration(classNode)!;
       expect(decorators).toBeDefined();
       expect(decorators.length).toEqual(1);
@@ -34,40 +35,47 @@ describe('Esm2015ReflectionHost', () => {
       expect(decorator.name).toEqual('Directive');
       expect(decorator.import).toEqual({ name: 'Directive', from: '@angular/core' });
       expect(decorator.args!.map(arg => arg.getText())).toEqual([
-        `{ selector: '[ngFor][ngForOf]' }`
-      ]);
-    });
-  });
-
-  describe('getClassDecorators()', () => {
-    it('should find the decorators on a class', () => {
-      const classSymbol = getSymbol('NgForOf');
-
-      const decorators = host.getClassDecorators(classSymbol);
-      expect(decorators).toBeDefined();
-      expect(decorators.length).toEqual(1);
-
-      const decorator = decorators[0];
-      expect(decorator.name).toEqual('Directive');
-      expect(decorator.import).toEqual({ name: 'Directive', from: '@angular/core' });
-      expect(decorator.args!.map(arg => arg.getText())).toEqual([
-        `{ selector: '[ngFor][ngForOf]' }`
+        `{ selector: '[someDirective]' }`
       ]);
     });
 
-    it('should return an empty array if there are no decorators', () => {
-      const classSymbol = getSymbol('SimpleClass');
-      const decorators = host.getClassDecorators(classSymbol);
-      expect(decorators).toEqual([]);
+    it('should return null if there are no decorators', () => {
+      const classNode = getNode('SimpleClass');
+      const decorators = host.getDecoratorsOfDeclaration(classNode);
+      expect(decorators).toBe(null);
     });
 
-    it('should return an empty array if the symbol is not a class', () => {
-      const functionSymbol = getSymbol('foo');
-      const decorators = host.getClassDecorators(functionSymbol);
-      expect(decorators).toEqual([]);
+    it('should return null if the symbol is not a class', () => {
+      const functionNode = getNode('foo');
+      const decorators = host.getDecoratorsOfDeclaration(functionNode);
+      expect(decorators).toBe(null);
     });
   });
 
+  describe('getMembersOfClass()', () => {
+    it('should find decorated members on a class', () => {
+      const classNode = getNode('SomeDirective');
+      debugger;
+      const members = host.getMembersOfClass(classNode)!;
+      expect(members).toBeDefined();
+      expect(members.length).toEqual(2);
+
+      checkMember(members[0], 'input1');
+      checkMember(members[1], 'input2');
+    });
+  });
+
+  describe('getConstructorParamDecorators', () => {
+    it('should ...', () => {
+      const classNode = getNode('SomeDirective');
+      const parameters = host.getConstructorParameters(classNode);
+      expect(parameters).toEqual([
+        jasmine.objectContaining({name: '_viewContainer'}),
+        jasmine.objectContaining({name: '_templateRef'}),
+        jasmine.objectContaining({name: 'injected'}),
+      ]);
+    });
+  });
 
   function createProgram(packagePath: string, entryPointPath: string) {
     const options: ts.CompilerOptions = { allowJs: true, rootDir: packagePath };
@@ -91,11 +99,22 @@ describe('Esm2015ReflectionHost', () => {
   }
 
   function isNamedDeclaration(node: ts.Node): node is ts.NamedDeclaration {
-    return ((node as any).name);
+    return ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node);
   }
 
-  function getSymbol(name: string) {
-    const node = getNode(name);
-    return program.getTypeChecker().getSymbolAtLocation(node.name!)!;
+  function checkMember(member: ClassMember, name: string) {
+    expect(member.node).toBe(null);
+    expect(member.kind).toEqual(ClassMemberKind.Property);
+    expect(member.type).toBe(null);
+    expect(member.name).toEqual(name);
+    expect(member.nameNode).toBe(null);
+    expect(member.initializer).toBe(null);
+    expect(member.isStatic).toEqual(false);
+
+    expect(member.decorators).toBeDefined();
+    expect(member.decorators!.length).toEqual(1);
+    expect(member.decorators![0].name).toEqual('Input');
+    expect(member.decorators![0].import!.name).toEqual('Input');
+    expect(member.decorators![0].import!.from).toEqual('@angular/core');
   }
 });
