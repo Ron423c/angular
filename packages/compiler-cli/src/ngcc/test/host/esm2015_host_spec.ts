@@ -7,26 +7,64 @@
  */
 
 import * as ts from 'typescript';
-import { resolve } from 'path';
 import { Esm2015ReflectionHost } from '../../src/host/esm2015_host';
-import { ClassMember, ClassMemberKind } from '../../../../src/ngtsc/host';
+import { getFakeCore } from '../helpers/dummy_core_file';
+import { getDeclaration, makeProgram as _makeProgram } from '../../../ngtsc/testing/in_memory_typescript';
+import { ClassMemberKind } from '../../../ngtsc/host';
+
+const SOME_DIRECTIVE_FILE = {
+  name: '/some_directive.js',
+  contents: `
+    import { Directive, InjectionToken, Input, Inject } from '@angular/core';
+
+    const INJECTED_TOKEN = new InjectionToken('injected');
+    const ViewContainerRef = {};
+    const TemplateRef = {};
+
+    class SomeDirective {
+      constructor(_viewContainer, _template, injected) {}
+    }
+    SomeDirective.decorators = [
+        { type: Directive, args: [{ selector: '[someDirective]' },] }
+    ];
+    SomeDirective.ctorParameters = () => [
+      { type: ViewContainerRef, },
+      { type: TemplateRef, },
+      { type: undefined, decorators: [{ type: Inject, args: [INJECTED_TOKEN,] },] },
+    ];
+
+    SomeDirective.propDecorators = {
+      "input1": [{ type: Input },],
+      "input2": [{ type: Input },],
+    };
+  `
+};
+
+const SIMPLE_CLASS_FILE = {
+  name: '/simple_class.js',
+  contents: `
+    class SimpleClass {}
+  `
+};
+
+const FOO_FUNCTION_FILE = {
+  name: '/foo_file.js',
+  contents: `
+    function foo() {}
+  `
+};
+
+function makeProgram(...files: {name: string, contents: string}[]): ts.Program {
+  return _makeProgram([getFakeCore(), ...files], { allowJs: true, checkJs: false }).program;
+}
 
 describe('Esm2015ReflectionHost', () => {
-  let program: ts.Program;
-  let host: Esm2015ReflectionHost;
-  let file: ts.SourceFile;
-
-  beforeEach(() => {
-    const packagePath = resolve(process.env.TEST_SRCDIR, 'angular/packages/compiler-cli/src/ngcc/test/host/test_files/fesm2015');
-    const entryPointPath = resolve(packagePath, 'test.js');
-    program = createProgram(packagePath, entryPointPath);
-    host = new Esm2015ReflectionHost(program.getTypeChecker());
-    file = program.getSourceFile(entryPointPath)!;
-  });
 
   describe('getDecoratorsOfDeclaration()', () => {
     it('should find the decorators on a class', () => {
-      const classNode = getNode('SomeDirective');
+      const program = makeProgram(SOME_DIRECTIVE_FILE);
+      const host = new Esm2015ReflectionHost(program.getTypeChecker());
+      const classNode = getDeclaration(program, SOME_DIRECTIVE_FILE.name, 'SomeDirective', ts.isClassDeclaration);
       const decorators = host.getDecoratorsOfDeclaration(classNode)!;
       expect(decorators).toBeDefined();
       expect(decorators.length).toEqual(1);
@@ -40,13 +78,17 @@ describe('Esm2015ReflectionHost', () => {
     });
 
     it('should return null if there are no decorators', () => {
-      const classNode = getNode('SimpleClass');
+      const program = makeProgram(SOME_DIRECTIVE_FILE);
+      const host = new Esm2015ReflectionHost(program.getTypeChecker());
+      const classNode = getDeclaration(program, SIMPLE_CLASS_FILE.name, 'SimpleClass', ts.isClassDeclaration);
       const decorators = host.getDecoratorsOfDeclaration(classNode);
       expect(decorators).toBe(null);
     });
 
     it('should return null if the symbol is not a class', () => {
-      const functionNode = getNode('foo');
+      const program = makeProgram(SOME_DIRECTIVE_FILE);
+      const host = new Esm2015ReflectionHost(program.getTypeChecker());
+      const functionNode = getDeclaration(program, FOO_FUNCTION_FILE.name, 'foo', ts.isFunctionDeclaration);
       const decorators = host.getDecoratorsOfDeclaration(functionNode);
       expect(decorators).toBe(null);
     });
@@ -54,20 +96,24 @@ describe('Esm2015ReflectionHost', () => {
 
   describe('getMembersOfClass()', () => {
     it('should find decorated members on a class', () => {
-      const classNode = getNode('SomeDirective');
-      debugger;
+      const program = makeProgram(SOME_DIRECTIVE_FILE);
+      const host = new Esm2015ReflectionHost(program.getTypeChecker());
+      const classNode = getDeclaration(program, SOME_DIRECTIVE_FILE.name, 'SomeDirective', ts.isClassDeclaration);
       const members = host.getMembersOfClass(classNode)!;
       expect(members).toBeDefined();
       expect(members.length).toEqual(2);
-
-      checkMember(members[0], 'input1');
-      checkMember(members[1], 'input2');
+      expect(members).toEqual([
+        { node: null, kind: ClassMemberKind.Property, type: null, name: 'inject1', nameNode: null, initializer: null, isStatic: false },
+        { node: null, kind: ClassMemberKind.Property, type: null, name: 'inject2', nameNode: null, initializer: null, isStatic: false },
+      ]);
     });
   });
 
   describe('getConstructorParamDecorators', () => {
     it('should ...', () => {
-      const classNode = getNode('SomeDirective');
+      const program = makeProgram(SOME_DIRECTIVE_FILE);
+      const host = new Esm2015ReflectionHost(program.getTypeChecker());
+      const classNode = getDeclaration(program, SOME_DIRECTIVE_FILE.name, 'SomeDirective', ts.isClassDeclaration);
       const parameters = host.getConstructorParameters(classNode);
       expect(parameters).toEqual([
         jasmine.objectContaining({name: '_viewContainer'}),
@@ -76,45 +122,4 @@ describe('Esm2015ReflectionHost', () => {
       ]);
     });
   });
-
-  function createProgram(packagePath: string, entryPointPath: string) {
-    const options: ts.CompilerOptions = { allowJs: true, rootDir: packagePath };
-    const host = ts.createCompilerHost(options);
-    return ts.createProgram([entryPointPath], options, host);
-  }
-
-  function getNode(name: string) {
-    let namedNode: ts.NamedDeclaration;
-    const walk = (rootNode: ts.Node) => {
-      ts.forEachChild(rootNode, node => {
-        if (isNamedDeclaration(node) && node.name!.getText() === name) {
-          namedNode = node;
-        } else {
-          walk(node);
-        }
-      });
-    };
-    walk(file);
-    return namedNode!;
-  }
-
-  function isNamedDeclaration(node: ts.Node): node is ts.NamedDeclaration {
-    return ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node);
-  }
-
-  function checkMember(member: ClassMember, name: string) {
-    expect(member.node).toBe(null);
-    expect(member.kind).toEqual(ClassMemberKind.Property);
-    expect(member.type).toBe(null);
-    expect(member.name).toEqual(name);
-    expect(member.nameNode).toBe(null);
-    expect(member.initializer).toBe(null);
-    expect(member.isStatic).toEqual(false);
-
-    expect(member.decorators).toBeDefined();
-    expect(member.decorators!.length).toEqual(1);
-    expect(member.decorators![0].name).toEqual('Input');
-    expect(member.decorators![0].import!.name).toEqual('Input');
-    expect(member.decorators![0].import!.from).toEqual('@angular/core');
-  }
 });

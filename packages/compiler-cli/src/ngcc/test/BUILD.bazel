@@ -20,9 +20,6 @@ ts_library(
 jasmine_node_test(
     name = "test",
     bootstrap = ["angular/tools/testing/init_node_no_angular_spec.js"],
-    data = [
-      "host/test_files/fesm2015/test.js",
-    ],
     deps = [
         ":test_lib",
         "//tools/testing:node_no_angular",
