@@ -73,7 +73,7 @@ describe('Esm2015ReflectionHost', () => {
     });
 
     it('should return null if there are no decorators', () => {
-      const program = makeProgram(SOME_DIRECTIVE_FILE);
+      const program = makeProgram(SIMPLE_CLASS_FILE);
       const host = new Esm2015ReflectionHost(program.getTypeChecker());
       const classNode = getDeclaration(program, SIMPLE_CLASS_FILE.name, 'SimpleClass', ts.isClassDeclaration);
       const decorators = host.getDecoratorsOfDeclaration(classNode);
@@ -81,7 +81,7 @@ describe('Esm2015ReflectionHost', () => {
     });
 
     it('should return null if the symbol is not a class', () => {
-      const program = makeProgram(SOME_DIRECTIVE_FILE);
+      const program = makeProgram(FOO_FUNCTION_FILE);
       const host = new Esm2015ReflectionHost(program.getTypeChecker());
       const functionNode = getDeclaration(program, FOO_FUNCTION_FILE.name, 'foo', ts.isFunctionDeclaration);
       const decorators = host.getDecoratorsOfDeclaration(functionNode);
@@ -97,10 +97,7 @@ describe('Esm2015ReflectionHost', () => {
       const members = host.getMembersOfClass(classNode)!;
       expect(members).toBeDefined();
       expect(members.length).toEqual(2);
-      expect(members).toEqual([
-        { node: null, kind: ClassMemberKind.Property, type: null, name: 'inject1', nameNode: null, initializer: null, isStatic: false },
-        { node: null, kind: ClassMemberKind.Property, type: null, name: 'inject2', nameNode: null, initializer: null, isStatic: false },
-      ]);
+      expect(members.map(member => member.name)).toEqual(['input1', 'input2']);
     });
   });
 
@@ -110,11 +107,8 @@ describe('Esm2015ReflectionHost', () => {
       const host = new Esm2015ReflectionHost(program.getTypeChecker());
       const classNode = getDeclaration(program, SOME_DIRECTIVE_FILE.name, 'SomeDirective', ts.isClassDeclaration);
       const parameters = host.getConstructorParameters(classNode);
-      expect(parameters).toEqual([
-        jasmine.objectContaining({name: '_viewContainer'}),
-        jasmine.objectContaining({name: '_templateRef'}),
-        jasmine.objectContaining({name: 'injected'}),
-      ]);
+      expect(parameters).toBeDefined();
+      expect(parameters!.map(parameter => parameter.name)).toEqual(['_viewContainer', '_template', 'injected']);
     });
   });
 });
