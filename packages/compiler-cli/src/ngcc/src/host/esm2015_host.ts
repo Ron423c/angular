@@ -234,7 +234,7 @@ function getDecoratorArgs(node: ts.ObjectLiteralExpression) {
   if (argsExpression && ts.isArrayLiteralExpression(argsExpression)) {
     return Array.from(argsExpression.elements);
   } else {
-    return null;
+    return [];
   }
 }
 
