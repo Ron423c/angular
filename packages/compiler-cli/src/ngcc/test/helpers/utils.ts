@@ -5,6 +5,14 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
+import * as ts from 'typescript';
+import { makeProgram as _makeProgram } from '../../../ngtsc/testing/in_memory_typescript';
+
+export { getDeclaration } from '../../../ngtsc/testing/in_memory_typescript';
+
+export function makeProgram(...files: {name: string, contents: string}[]): ts.Program {
+  return _makeProgram([getFakeCore(), ...files], { allowJs: true, checkJs: false }).program;
+}
 
 export function getFakeCore() {
   return {
@@ -41,3 +49,4 @@ export function getFakeCore() {
     `
   };
 }
+

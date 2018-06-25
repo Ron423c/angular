@@ -7,12 +7,23 @@
  */
 
 import * as ts from 'typescript';
+import { Decorator } from '../../../ngtsc/host';
 
+export class DecoratedClass {
+  constructor(
+    public name: string,
+    public declaration: ts.Declaration,
+    public decorators: Decorator[],
+  ) {}
+}
 
 export interface PackageParser {
   /**
-   * Parse a source file and identify all the declarations that represent exported classes.
-   * This can be different dependending upon the format of the source file.
+   * Parse a source file and identify all the declarations that represent exported classes,
+   * which are also decorated.
+   *
+   * Identifying classes can be different depending upon the format of the source file.
+   *
    * For example:
    *
    * - ES2015 files contain `class Xxxx {...}` style declarations
@@ -24,30 +35,5 @@ export interface PackageParser {
    * @param sourceFile the file containing classes to parse.
    * @returns an array of TypeScript declaration nodes that represent the exported classes.
    */
-  getExportedClasses(sourceFile: ts.SourceFile): ts.Declaration[];
+  getDecoratedClasses(sourceFile: ts.SourceFile): DecoratedClass[];
 }
-
-
-// /**
-//  * Search the AST of the specified source file, looking for classes that have been decorated.
-//  * @param entryPoint The source file containing the exports to find.
-//  * @returns an array containing the decorated classes found in this file.
-//  */
-// getDecoratedClasses(entryPoint: ts.SourceFile): DecoratedClass[] {
-//   const decoratedClasses: DecoratedClass[] = [];
-//   const walk = (node: ts.Node) => {
-//     ts.forEachChild(node, node => {
-//       if (this.reflectionHost.isClass(node)) {
-//         const decorators = this.reflectionHost.getDecoratorsOfDeclaration(node);
-//         if (decorators && decorators.length) {
-//           decoratedClasses.push({ classNode: node, decorators });
-//         }
-//       } else {
-//         walk(node);
-//       }
-//     });
-//   };
-
-//   walk(entryPoint);
-//   return decoratedClasses;
-// }

@@ -8,8 +8,7 @@
 
 import * as ts from 'typescript';
 import { Esm2015ReflectionHost } from '../../src/host/esm2015_host';
-import { getFakeCore } from '../helpers/dummy_core_file';
-import { getDeclaration, makeProgram as _makeProgram } from '../../../ngtsc/testing/in_memory_typescript';
+import { getDeclaration, makeProgram } from '../helpers/utils';
 import { ClassMemberKind } from '../../../ngtsc/host';
 
 const SOME_DIRECTIVE_FILE = {
@@ -53,10 +52,6 @@ const FOO_FUNCTION_FILE = {
     function foo() {}
   `
 };
-
-function makeProgram(...files: {name: string, contents: string}[]): ts.Program {
-  return _makeProgram([getFakeCore(), ...files], { allowJs: true, checkJs: false }).program;
-}
 
 describe('Esm2015ReflectionHost', () => {
 
