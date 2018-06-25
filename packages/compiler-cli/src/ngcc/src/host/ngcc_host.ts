@@ -13,12 +13,4 @@ import { ReflectionHost } from '../../../ngtsc/host';
  * A reflection host that has extra methods for looking at non-Typescript package formats
  */
 export interface NgccReflectionHost extends ReflectionHost {
-  /**
-   * Test whether a node represents a class.
-   *
-   * In JS this may not actually be a class declaration. It could be a function declaration
-   * or even the left side of an assignment.
-   * @param node The node to test for classiness.
-   */
-  isClass(node: ts.Node): node is ts.Declaration;
 }

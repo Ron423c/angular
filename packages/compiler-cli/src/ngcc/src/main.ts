@@ -8,8 +8,15 @@
 
 import { resolve } from 'path';
 import * as ts from 'typescript';
-import { PackageParser } from './parser';
+import { Decorator } from '../../ngtsc/host';
+import { FlatEsm2015PackageParser } from './parser/flat_esm2015_parser';
 import { Esm2015ReflectionHost } from './host/esm2015_host';
+
+interface DecoratedClass {
+  name: string;
+  declaration: ts.Declaration;
+  decorators: Decorator[];
+}
 
 export function mainNgcc(args: string[]): number {
   const rootPath = args[0];
@@ -21,10 +28,22 @@ export function mainNgcc(args: string[]): number {
   const entryPointFile = packageProgram.getSourceFile(entryPointPath)!;
   const typeChecker = packageProgram.getTypeChecker();
 
-  const packageParser = new PackageParser(new Esm2015ReflectionHost(typeChecker));
-  const decoratedClasses = packageParser.getDecoratedClasses(entryPointFile);
+  const parser = new FlatEsm2015PackageParser(typeChecker);
+  const classDeclarations = parser.getExportedClasses(entryPointFile);
+  console.error('Exported classes', classDeclarations.map(m => m.getText()));
 
-  console.error('Decorated Classes', decoratedClasses.map(m => m.decorators));
+  const reflectionHost = new Esm2015ReflectionHost(typeChecker);
+  const decoratedClasses = classDeclarations
+    .map(declaration => ({
+      name: declaration.getText(),
+      declaration,
+      decorators: reflectionHost.getDecoratorsOfDeclaration(declaration)
+    }))
+    .filter(decoratedClass => decoratedClass.decorators) as DecoratedClass[];
+
+  console.log('Decorated classes', decoratedClasses.map(decoratedClass =>
+    decoratedClass.name +
+    decoratedClass.decorators.map(decorator => decorator.name)));
 
   return 0;
 }
