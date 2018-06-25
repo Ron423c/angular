@@ -8,7 +8,7 @@
 
 import * as ts from 'typescript';
 import { resolve } from 'path';
-import { Esm2015ReflectionHost } from '../../../../src/ngcc/src/host/esm2015_host';
+import { Esm2015ReflectionHost } from '../../src/host/esm2015_host';
 import { ClassMember, ClassMemberKind } from '../../../../src/ngtsc/host';
 
 describe('Esm2015ReflectionHost', () => {
@@ -17,7 +17,7 @@ describe('Esm2015ReflectionHost', () => {
   let file: ts.SourceFile;
 
   beforeEach(() => {
-    const packagePath = resolve(process.env.TEST_SRCDIR, 'angular/packages/compiler-cli/test/ngcc/unit/host/test_files/fesm2015');
+    const packagePath = resolve(process.env.TEST_SRCDIR, 'angular/packages/compiler-cli/src/ngcc/test/host/test_files/fesm2015');
     const entryPointPath = resolve(packagePath, 'test.js');
     program = createProgram(packagePath, entryPointPath);
     host = new Esm2015ReflectionHost(program.getTypeChecker());

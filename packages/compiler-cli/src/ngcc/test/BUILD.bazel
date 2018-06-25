@@ -1,28 +1,30 @@
+package(default_visibility = ["//visibility:public"])
+
 load("//tools:defaults.bzl", "ts_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "jasmine_node_test")
 
-# Integration tests
 ts_library(
-    name = "ngcc_lib",
+    name = "test_lib",
     testonly = 1,
     srcs = glob([
-        "**/*_spec.ts",
+        "**/*.ts",
     ]),
     deps = [
         "//packages/compiler-cli/src/ngcc",
-        "//packages/compiler-cli/test:test_utils",
+        "//packages/compiler-cli/src/ngtsc/host",
+        "//packages/compiler-cli/src/ngtsc/metadata",
+        "//packages/compiler-cli/src/ngtsc/testing",
     ],
 )
 
 jasmine_node_test(
-    name = "ngcc",
+    name = "test",
     bootstrap = ["angular/tools/testing/init_node_no_angular_spec.js"],
     data = [
-      "//packages/core:npm_package",
-      "//packages/common:npm_package",
+      "host/test_files/fesm2015/test.js",
     ],
     deps = [
-        ":ngcc_lib",
+        ":test_lib",
         "//tools/testing:node_no_angular",
     ],
 )
