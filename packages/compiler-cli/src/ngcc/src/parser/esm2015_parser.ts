@@ -10,14 +10,16 @@ import * as ts from 'typescript';
 import { NgccReflectionHost } from '../host/ngcc_host';
 import { DecoratedClass, PackageParser } from './parser';
 
-export class FlatEsm2015PackageParser implements PackageParser {
+export class Esm2015PackageParser implements PackageParser {
+
+  checker = this.program.getTypeChecker();
 
   constructor(
-    protected checker: ts.TypeChecker,
+    protected program: ts.Program,
     protected host: NgccReflectionHost) {}
 
-  getDecoratedClasses(sourceFile: ts.SourceFile): DecoratedClass[] {
-    const moduleSymbol = this.checker.getSymbolAtLocation(sourceFile);
+  getDecoratedExportedClasses(entryPoint: ts.SourceFile): DecoratedClass[] {
+    const moduleSymbol = this.checker.getSymbolAtLocation(entryPoint);
     if (moduleSymbol) {
 
       const exportClasses = this.checker.getExportsOfModule(moduleSymbol)

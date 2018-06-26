@@ -8,45 +8,49 @@
 
  /* tslint:disable:no-console */
 
-import {resolve} from 'path';
+import {relative, resolve} from 'path';
+import {inspect} from 'util';
 import * as ts from 'typescript';
-import {DecoratedClass} from './parser/parser';
-import {FlatEsm2015PackageParser} from './parser/flat_esm2015_parser';
+import {DecoratedClass, getEntryPoints} from './parser/parser';
+import {Esm2015PackageParser} from './parser/esm2015_parser';
 import {Esm2015ReflectionHost} from './host/esm2015_host';
 import {ComponentDecoratorHandler, DirectiveDecoratorHandler, InjectableDecoratorHandler, NgModuleDecoratorHandler, SelectorScopeRegistry} from '../../ngtsc/annotations';
 import {AnalyzedClass, Analyzer} from './analyzer';
 
 export function mainNgcc(args: string[]): number {
-  const rootPath = args[0];
-  const packagePath = resolve(rootPath, 'fesm2015');
-  const entryPointPath = resolve(packagePath, 'common.js');
+  const packagePath = resolve(args[0]);
+  const entryPointPaths = getEntryPoints(packagePath, 'fesm2015');
 
-  const options: ts.CompilerOptions = { allowJs: true, rootDir: packagePath };
-  const host = ts.createCompilerHost(options);
-  const packageProgram = ts.createProgram([entryPointPath], options, host);
-  const entryPointFile = packageProgram.getSourceFile(entryPointPath)!;
-  const typeChecker = packageProgram.getTypeChecker();
+  console.log('Entry points', entryPointPaths);
+  entryPointPaths.forEach(entryPointPath => {
 
-  const reflectionHost = new Esm2015ReflectionHost(typeChecker);
-  const parser = new FlatEsm2015PackageParser(typeChecker, reflectionHost);
-  const decoratedClasses = parser.getDecoratedClasses(entryPointFile);
+    console.log('Processing', relative(packagePath, entryPointPath));
+    const options: ts.CompilerOptions = { allowJs: true, rootDir: entryPointPath };
+    const host = ts.createCompilerHost(options);
+    const packageProgram = ts.createProgram([entryPointPath], options, host);
+    const entryPointFile = packageProgram.getSourceFile(entryPointPath)!;
+    const typeChecker = packageProgram.getTypeChecker();
 
-  dumpDecoratedClasses(decoratedClasses);
+    const reflectionHost = new Esm2015ReflectionHost(typeChecker);
+    const parser = new Esm2015PackageParser(packageProgram, reflectionHost);
 
-  const scopeRegistry = new SelectorScopeRegistry(typeChecker, reflectionHost);
-  const handlers = [
-    new ComponentDecoratorHandler(typeChecker, reflectionHost, scopeRegistry),
-    new DirectiveDecoratorHandler(typeChecker, reflectionHost, scopeRegistry),
-    new InjectableDecoratorHandler(reflectionHost),
-    new NgModuleDecoratorHandler(typeChecker, scopeRegistry),
-  ];
+    const decoratedClasses = parser.getDecoratedExportedClasses(entryPointFile);
+    dumpDecoratedClasses(decoratedClasses);
 
-  const analyzer = new Analyzer(handlers);
-  const analyzedClasses = decoratedClasses
-    .map(decoratedClass => analyzer.analyze(decoratedClass))
-    .filter(analysis => !!analysis) as AnalyzedClass[];
+    const scopeRegistry = new SelectorScopeRegistry(typeChecker, reflectionHost);
+    const handlers = [
+      new ComponentDecoratorHandler(typeChecker, reflectionHost, scopeRegistry),
+      new DirectiveDecoratorHandler(typeChecker, reflectionHost, scopeRegistry),
+      new InjectableDecoratorHandler(reflectionHost),
+      new NgModuleDecoratorHandler(typeChecker, scopeRegistry),
+    ];
+    const analyzer = new Analyzer(handlers);
+    const analyzedClasses = decoratedClasses
+      .map(decoratedClass => analyzer.analyze(decoratedClass))
+      .filter(analysis => !!analysis) as AnalyzedClass[];
 
-  dumpAnalysis(analyzedClasses);
+    dumpAnalysis(analyzedClasses);
+  });
 
   return 0;
 }
@@ -54,20 +58,21 @@ export function mainNgcc(args: string[]): number {
 function dumpDecoratedClasses(decoratedClasses: DecoratedClass[]) {
   console.log('Decorated classes');
   decoratedClasses.forEach(decoratedClass => {
-    console.log(`- ${decoratedClass.name}`);
+    let output = `- ${decoratedClass.name} `;
     decoratedClass.decorators.forEach(decorator => {
-      console.log(`  * ${decorator.name}:`);
+      output += `[${decorator.name}`;
       if (decorator.args) {
-        decorator.args.forEach(arg => console.log(`    ~ ${arg.getText()}`));
+        output += ' ' + decorator.args.map(arg => `${arg.getText()}`).join(', ');
       }
+      output += ']';
     });
+    console.log(output);
   });
 }
 
 function dumpAnalysis(analyzedClasses: AnalyzedClass[]) {
   console.log('Analyzed classes');
   analyzedClasses.forEach(analyzedClass => {
-    console.log(`- ${analyzedClass.clazz.name}`);
-    console.log(`  * ${analyzedClass.analysis.name}:`, analyzedClass.analysis);
+    console.log(`- ${analyzedClass.clazz.name}`, inspect(analyzedClass.analysis, false, 1, true));
   });
 }

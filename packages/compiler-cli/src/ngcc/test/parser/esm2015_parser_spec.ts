@@ -9,7 +9,7 @@
 import * as ts from 'typescript';
 import { makeProgram } from '../helpers/utils';
 import { Esm2015ReflectionHost } from '../../src/host/esm2015_host';
-import { FlatEsm2015PackageParser } from '../../src/parser/flat_esm2015_parser';
+import { Esm2015PackageParser } from '../../src/parser/esm2015_parser';
 
 const BASIC_FILE = {
   name: '/primary.js',
@@ -34,14 +34,14 @@ const BASIC_FILE = {
   `
 };
 
-describe('FlatEsm2015PackageParser', () => {
+describe('Esm2015PackageParser', () => {
   describe('getDecoratedClasses()', () => {
     it('should return an array of object for each class that is exported and decorated', () => {
       const program = makeProgram(BASIC_FILE);
       const host = new Esm2015ReflectionHost(program.getTypeChecker());
-      const parser = new FlatEsm2015PackageParser(program.getTypeChecker(), host);
+      const parser = new Esm2015PackageParser(program, host);
 
-      const decoratedClasses = parser.getDecoratedClasses(program.getSourceFile(BASIC_FILE.name)!);
+      const decoratedClasses = parser.getDecoratedExportedClasses(program.getSourceFile(BASIC_FILE.name)!);
 
       expect(decoratedClasses.length).toEqual(1);
       const decoratedClass = decoratedClasses[0];

@@ -9,7 +9,6 @@
 import * as ts from 'typescript';
 import { Esm2015ReflectionHost } from '../../src/host/esm2015_host';
 import { getDeclaration, makeProgram } from '../helpers/utils';
-import { ClassMemberKind } from '../../../ngtsc/host';
 
 const SOME_DIRECTIVE_FILE = {
   name: '/some_directive.js',
