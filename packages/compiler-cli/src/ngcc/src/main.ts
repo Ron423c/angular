@@ -73,6 +73,7 @@ function dumpDecoratedClasses(decoratedClasses: DecoratedClass[]) {
 function dumpAnalysis(analyzedClasses: AnalyzedClass[]) {
   console.log('Analyzed classes');
   analyzedClasses.forEach(analyzedClass => {
-    console.log(`- ${analyzedClass.clazz.name}`, inspect(analyzedClass.analysis, false, 1, true));
+    console.log(`- ${analyzedClass.clazz.name}`);
+    console.log(inspect(analyzedClass, false, 1, true).split('\n').map(line => `    ${line}`).join('\n'));
   });
 }
