@@ -18,8 +18,8 @@ jasmine_node_test(
     name = "ngcc",
     bootstrap = ["angular/tools/testing/init_node_no_angular_spec.js"],
     data = [
-        "//packages/core:npm_package",
         "//packages/common:npm_package",
+        "//packages/core:npm_package",
     ],
     deps = [
         ":ngcc_lib",
